@@ -20,7 +20,7 @@ import javax.servlet.http.HttpSession;
 @WebServlet("/VerifyUser")
 public class VerifyUser extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private static final String sql = "SELECT  username  FROM users WHERE userid = ? AND password =?";
+	private static final String sql = "SELECT  username  FROM USERS WHERE userid = ? AND password =?";
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -28,31 +28,42 @@ public class VerifyUser extends HttpServlet {
 		String userid = request.getParameter("userid");
 		String password = request.getParameter("password");
 		String utype = request.getParameter("utype");
+		// using context parameters
+		String user_id = getServletContext().getInitParameter("Userid");
+		String pass = getServletContext().getInitParameter("Password");
+		String utyp=getServletContext().getInitParameter("utype");
+		
 		try {
-			if (utype.equals("owner")) {
-				if (userid.equals("admin") && password.equals("indore")) {
+			if (utype.equals(utyp)) {
+				if (userid.equals(user_id) && password.equals(pass)) {
 					response.sendRedirect("adminpage.jsp");
 				} else {
 					out.println("INVALID CREDENTIALS FOR ADMIN");
 				}
 
 			} else {
-				Class.forName("com.mysql.jdbc.Driver");
-				Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/booksdata", "root", "root");
-
+				//getting connection through contextParam
+				String driver=getServletContext().getInitParameter("driverClass");
+				String url=getServletContext().getInitParameter("url");
+				String db=getServletContext().getInitParameter("database");
+				String uname=getServletContext().getInitParameter("user_name");
+				String pas=getServletContext().getInitParameter("password");
+				Class.forName(driver);
+				Connection con = DriverManager.getConnection(url+db,uname,pas);
+                  System.out.println("connected");
 				PreparedStatement ps = con.prepareStatement(sql);
 				ps.setString(1, userid);
 				ps.setString(2, password);
 				ResultSet rs = ps.executeQuery();
 				if (rs.next()) {
 
-					// storing the userid in session
+					// Using session to store userid
 					// step-1 (fetch the session object)
 					HttpSession session = request.getSession();
 					// step-2 (write the data in session)
 					session.setAttribute("user", userid);
-                // System.out.println(session.getAttribute(userid));
-                 
+					
+
 					// whether user want to save the password
 					String choice = request.getParameter("save");
 					if (choice != null) {
@@ -78,7 +89,7 @@ public class VerifyUser extends HttpServlet {
 				con.close();
 			}
 		} catch (Exception e) {
-			out.println(e);
+			e.printStackTrace();
 		}
 	}
 
